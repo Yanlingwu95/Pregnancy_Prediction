@@ -14,8 +14,8 @@ from builtins import input
 # The service connection string to authenticate with your IoT hub.
 # Using the Azure CLI:
 # az iot hub show-connection-string --hub-name {your iot hub name}
-CONNECTION_STRING ="HostName=Trail413.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=C0x4dayT2cVHYkckVoSLDNo35p9yP/Jc7x8Dhq89kgU="
-DEVICE_ID = "mynewdevice"
+CONNECTION_STRING ="HostName=myhob.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=Ymm95CVG0UuLd2pZNpg5OYQ+7JHqdgpaHJwBf5bcsBI="
+DEVICE_ID = "ippot"
 
 # Details of the direct method to call.
 #METHOD_NAME = "SetTelemetryInterval"

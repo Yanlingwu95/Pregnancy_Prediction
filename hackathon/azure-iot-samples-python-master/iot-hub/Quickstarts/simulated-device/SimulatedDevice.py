@@ -16,7 +16,8 @@ from iothub_client import IoTHubMessage, IoTHubMessageDispositionResult, IoTHubE
 # The device connection string to authenticate the device with your IoT hub.
 # Using the Azure CLI:
 # az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyNodeDevice --output table
-CONNECTION_STRING = "HostName=Trail413.azure-devices.net;DeviceId=mynewdevice;SharedAccessKey=NYoyx/ib9kq1og6eDwIRXgwd4zCQmEnINLGtrSoUAdk="
+# CONNECTION_STRING = "HostName=myhob.azure-devices.net;DeviceId=ippot;SharedAccessKey=sk9RyGmtPUXHEqbV00PSG0F8oNTfNaZVJJ9XiTdYri4="
+CONNECTION_STRING = "HostName=CC-project-hub.azure-devices.net;DeviceId=Raspberry-Pi;SharedAccessKey=L0roOnzlbkhvu3O6GSKWMMcwTTu06Rh2IKeQingYXzs="
 
 # Using the MQTT protocol.
 PROTOCOL = IoTHubTransportProvider.MQTT
@@ -27,8 +28,6 @@ TEMPERATURE = 20.0
 HUMIDITY = 60
 MSG_TXT = "{\"temperature\": %.2f,\"humidity\": %.2f}"
 
-INTERVAL = 1
-
 def send_confirmation_callback(message, result, user_context):
     print ( "IoT Hub responded to message with status: %s" % (result) )
 
@@ -37,59 +36,11 @@ def iothub_client_init():
     client = IoTHubClient(CONNECTION_STRING, PROTOCOL)
     return client
 
-# Handle direct method calls from IoT Hub
-def device_method_callback(method_name, payload, user_context):
-    global INTERVAL
-    print ( "\nMethod callback called with:\nmethodName = %s\npayload = %s" % (method_name, payload) )
-    # print ("Hello World\n")
-    device_method_return_value = DeviceMethodReturnValue()
-    if method_name == "SetTelemetryInterval":
-        try:
-
-            INTERVAL = int(payload)
-
-            # Build and send the acknowledgment.
-            device_method_return_value.response = "{ \"Response\": \"Executed direct method %s\" }" % method_name
-
-            # device_method_return_value.response = "{ \"Hello World\" }"
-            device_method_return_value.status = 200
-        except ValueError:
-            # Build and send an error response.
-            device_method_return_value.response = "{ \"Response\": \"Invalid parameter\" }"
-            device_method_return_value.status = 400
-    elif method_name=="thisismyfunc":
-        try:
-            INTERVAL = int(payload)
-            print("my function run")
-            c  = ling(1,INTERVAL)
-            print(c)
-
-
-            device_method_return_value.response = "{ \"Response\": \"Executed direct method %s\" }" % method_name
-            device_method_return_value.status = 200
-        except ValueError:
-            # Build and send an error response.
-            device_method_return_value.response = "{ \"Response\": \"Invalid parameter\" }"
-            device_method_return_value.status = 400
-    else:
-        # Build and send an error response.
-        device_method_return_value.response = "{ \"Response\": \"Direct method not defined: %s\" }" % method_name
-        device_method_return_value.status = 404
-    return device_method_return_value
-
-def ling(a, b):
-    print("My function run!!!!!")
-    return a+b
-
 def iothub_client_telemetry_sample_run():
 
     try:
         client = iothub_client_init()
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
-
-        # Set up the callback method for direct method calls from the hub.
-        client.set_device_method_callback(
-            device_method_callback, None)
 
         while True:
             # Build the message with simulated telemetry values.
@@ -109,7 +60,7 @@ def iothub_client_telemetry_sample_run():
             # Send the message.
             print( "Sending message: %s" % message.get_string() )
             client.send_event_async(message, send_confirmation_callback, None)
-            time.sleep(INTERVAL)
+            time.sleep(1)
 
     except IoTHubError as iothub_error:
         print ( "Unexpected error %s from IoTHub" % iothub_error )
@@ -118,6 +69,6 @@ def iothub_client_telemetry_sample_run():
         print ( "IoTHubClient sample stopped" )
 
 if __name__ == '__main__':
-    print ( "IoT Hub Quickstart #2 - Simulated device" )
+    print ( "IoT Hub Quickstart #1 - Simulated device" )
     print ( "Press Ctrl-C to exit" )
     iothub_client_telemetry_sample_run()
