@@ -14,6 +14,8 @@ from multiprocessing import pool
 from multiprocessing import Process
 import pandas as pd
 import numpy as np
+from azure.storage.blob import BlockBlobService
+from azure.storage.blob import ContentSettings
 
 # Using the Python Device SDK for IoT Hub:
 #   https://github.com/Azure/azure-iot-sdk-python
@@ -84,83 +86,21 @@ def device_method_callback(method_name, payload, user_context):
     print ( "\nMethod callback called with:\nmethodName = %s\npayload = %s" % (method_name, payload) )
     # print ("Hello World\n")
     device_method_return_value = DeviceMethodReturnValue()
-    methods = method_name.split()
-    if len(methods)<4:
-        while (len(methods)<4):
-            print ("should receive something")
-            methods.append("shit")
-    response = ""
-    error = False
-    
-    TEMP=""
-    HUM=""
-    MOIS=""
-    LIG=""
-    
-    if methods[0] == "Tup":
-        print("Temperature up")
-        TEMP="Tup"
-        response += "Temperature up, "
-    elif methods[0] == "Tdown":
-        print("Temperature down")
-        TEMP="Tdown"
-        response += "Temperature down"
-    elif methods[0] == "Tst":
-        print("Temperature stay")
-        TEMP="Tstay"
-        response += "Temperature stay"
-    else:
-        print("Error! Temperature method name is wrong!")
-        error = True
-        
-    if methods[1] == "Hup":
-        print("Humidity up")
-        HUM="Hup"
-        response += "Humidity up, "
-    elif methods[1] == "Hdown":
-        print("Humidity down")
-        HUM="Hdown"
-        response += "Humidity down, "
-    elif methods[1] == "Hst":
-        print("Humidity stay")
-        HUM="Hstay"
-        response += "Humidity stay, "
-    else:
-        print("Error! Humidity method name is wrong!")
-        error = True
-        
-    if methods[2] == "Mup":
-        print("Moisture up")
-        MOIS="Mup"
-        response += "Moisture up, "
-    elif methods[2] == "Mdown":
-        print("Moisture down")
-        MOIS="Mdown"
-        response += "Moisture down, "
-    elif methods[2] == "Mst":
-        print("Moisture stay")
-        MOIS="Mstay"
-        response += "Moisture stay, "
-    else:
-        print("Error! Moisture method name is wrong!")
-        error = True
-        
-    if methods[3] == "Lup":
-        print("Light up")
-        LIG="Lup"
-        response += "Light up. "
-    elif methods[3] == "Ldown":
-        print("Light down")
-        LIG="Ldown"
-        response += "Light down, "
-    elif methods[3] == "Lst":
-        print("Light stay")
-        LIG="Lstay"
-        response += "Light stay, "
-    else:
-        print("Error! Light method name is wrong!")
-        error = True
+    ## Upload file to blob on Azure
+    if method_name == "send_file":
+        filename = 'firstdata'+payload+'.json'
+        block_blob_service = BlockBlobService(account_name='cs2743a315b9ea3x49fdxb30', account_key='fiGff9v/aulWyb6T3eUupbS4hS2ygfwmTmAQ55+xA+q+enpqIJfaPRfqSQ9paP2idEoj+FYaU7wX+FWWHfSkPQ==')
+        block_blob_service.create_blob_from_path(
+                            'mydata', #blob name
+                            filename, #blob's file name
+                            'row_data.json', # local file name
+                            content_settings=ContentSettings(content_type='json'))
+        response = 'OK'
+        error = False
 
+    else:
+        response = 'Fail'
+        error = True
 
     if error == False:
         # Build and send an error response.
@@ -205,9 +145,9 @@ def iothub_client_telemetry_sample_run():
               prop_map.add("temperatureAlert", "false")
 
             # Send the message.
-            print( "Sending message: %s" % message.get_string() )
-            client.send_event_async(message, send_confirmation_callback, None)
-            time.sleep(1)
+            # print( "Sending message: %s" % message.get_string() )
+            # client.send_event_async(message, send_confirmation_callback, None)
+            time.sleep(10)
 
     except IoTHubError as iothub_error:
         print ( "Unexpected error %s from IoTHub" % iothub_error )

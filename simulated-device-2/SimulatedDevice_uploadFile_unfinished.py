@@ -12,8 +12,10 @@ import threading as th
 import multiprocessing 
 from multiprocessing import pool
 from multiprocessing import Process
-import pandas as pd
+# import pandas as pd
 import numpy as np
+from azure.storage.blob import BlockBlobService
+from azure.storage.blob import ContentSettings
 
 # Using the Python Device SDK for IoT Hub:
 #   https://github.com/Azure/azure-iot-sdk-python
@@ -56,19 +58,18 @@ MESSAGE_TIMEOUT = 10000
 
 # Define the JSON message to send to IoT Hub.
 #Read data from file 
-# MSG_TXT = "{\"Time\": %s,\"Temp\": %.2f,\"Pressure\": %.2f,\"Humidity\": %.2f,\"Light\": %d,\"Moisture\": %d}"
-data = pd.read_csv('./row_data.csv')
-columns = data.columns
-MSG_TXT ="{"
-for i in range(len(columns)):
-    if i == len(columns) - 1:
-        MSG_TXT += "\""+columns[i]+"\": %.2f"
-    else:
-        MSG_TXT += "\""+columns[i]+"\": %.2f,"
-MSG_TXT += "}"
 
-# light_sensor = GroveLightSensor(light_pin)
-# moisture_sensor = GroveMoistureSensor(moisture_pin)
+# data = pd.read_csv('./row_data_sbsb.csv')
+# columns = data.columns
+# MSG_TXT ="{"
+# for i in range(len(columns)):
+#     if i == len(columns) - 1:
+#         MSG_TXT += "\""+columns[i]+"\": %.2f"
+#     else:
+#         MSG_TXT += "\""+columns[i]+"\": %.2f,"
+# MSG_TXT += "}"
+file = open("./row_data.csv")
+file_output = open("./real_time_data.csv")
 
 def send_confirmation_callback(message, result, user_context):
     print ( "IoT Hub responded to message with status: %s" % (result) )
@@ -84,83 +85,21 @@ def device_method_callback(method_name, payload, user_context):
     print ( "\nMethod callback called with:\nmethodName = %s\npayload = %s" % (method_name, payload) )
     # print ("Hello World\n")
     device_method_return_value = DeviceMethodReturnValue()
-    methods = method_name.split()
-    if len(methods)<4:
-        while (len(methods)<4):
-            print ("should receive something")
-            methods.append("shit")
-    response = ""
-    error = False
-    
-    TEMP=""
-    HUM=""
-    MOIS=""
-    LIG=""
-    
-    if methods[0] == "Tup":
-        print("Temperature up")
-        TEMP="Tup"
-        response += "Temperature up, "
-    elif methods[0] == "Tdown":
-        print("Temperature down")
-        TEMP="Tdown"
-        response += "Temperature down"
-    elif methods[0] == "Tst":
-        print("Temperature stay")
-        TEMP="Tstay"
-        response += "Temperature stay"
-    else:
-        print("Error! Temperature method name is wrong!")
-        error = True
-        
-    if methods[1] == "Hup":
-        print("Humidity up")
-        HUM="Hup"
-        response += "Humidity up, "
-    elif methods[1] == "Hdown":
-        print("Humidity down")
-        HUM="Hdown"
-        response += "Humidity down, "
-    elif methods[1] == "Hst":
-        print("Humidity stay")
-        HUM="Hstay"
-        response += "Humidity stay, "
-    else:
-        print("Error! Humidity method name is wrong!")
-        error = True
-        
-    if methods[2] == "Mup":
-        print("Moisture up")
-        MOIS="Mup"
-        response += "Moisture up, "
-    elif methods[2] == "Mdown":
-        print("Moisture down")
-        MOIS="Mdown"
-        response += "Moisture down, "
-    elif methods[2] == "Mst":
-        print("Moisture stay")
-        MOIS="Mstay"
-        response += "Moisture stay, "
-    else:
-        print("Error! Moisture method name is wrong!")
-        error = True
-        
-    if methods[3] == "Lup":
-        print("Light up")
-        LIG="Lup"
-        response += "Light up. "
-    elif methods[3] == "Ldown":
-        print("Light down")
-        LIG="Ldown"
-        response += "Light down, "
-    elif methods[3] == "Lst":
-        print("Light stay")
-        LIG="Lstay"
-        response += "Light stay, "
-    else:
-        print("Error! Light method name is wrong!")
-        error = True
+    ## Upload file to blob on Azure
+    if method_name == "send_file":
+        filename = 'firstdata'+payload+'.json'
+        block_blob_service = BlockBlobService(account_name='cs2743a315b9ea3x49fdxb30', account_key='fiGff9v/aulWyb6T3eUupbS4hS2ygfwmTmAQ55+xA+q+enpqIJfaPRfqSQ9paP2idEoj+FYaU7wX+FWWHfSkPQ==')
+        block_blob_service.create_blob_from_path(
+                            'mydata', #blob name
+                            filename, #blob's file name
+                            'real_time_data.csv', # local file name
+                            content_settings=ContentSettings(content_type='csv'))
+        response = 'OK'
+        error = False
 
+    else:
+        response = 'Fail'
+        error = True
 
     if error == False:
         # Build and send an error response.
@@ -181,33 +120,22 @@ def iothub_client_telemetry_sample_run():
         # Set up the callback method for direct method calls from the hub.
         client.set_device_method_callback(
             device_method_callback, None)
+			
+        for line in file:
+            file_output.write(line)
+            print("running!")
+            time.sleep(10)
 
-        for i in range(data.shape[0]):
-            time_c = time.ctime() 
-            Time = "\"" + str(time_c) + "\""
-            hectopascals = (random.random() * 15)
-            humidity = (random.random() * 20)
-            mositure = (random.random() * 30)
-            light = (random.random() * 30)
-            degrees = (random.random() * 30)
-            # Build the message with simulated telemetry values.
-            row_data = data.iloc[i]
-            row_data = tuple(row_data)
-            msg_txt_formatted = MSG_TXT % row_data
-            message = IoTHubMessage(msg_txt_formatted)
-
-            # Add a custom application property to the message.
-            # An IoT hub can filter on these properties without access to the message body.
-            prop_map = message.properties()
-            if degrees > 30:
-              prop_map.add("temperatureAlert", "true")
-            else:
-              prop_map.add("temperatureAlert", "false")
+        
+        #     # Build the message with simulated telemetry values.
+        #     row_data = data.iloc[i]
+        #     row_data = tuple(row_data)
+        #     msg_txt_formatted = MSG_TXT % row_data
+        #     message = IoTHubMessage(msg_txt_formatted)
 
             # Send the message.
-            print( "Sending message: %s" % message.get_string() )
-            client.send_event_async(message, send_confirmation_callback, None)
-            time.sleep(1)
+            # print( "Sending message: %s" % message.get_string() )
+            # client.send_event_async(message, send_confirmation_callback, None)
 
     except IoTHubError as iothub_error:
         print ( "Unexpected error %s from IoTHub" % iothub_error )
