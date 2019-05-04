@@ -20,7 +20,7 @@ DEVICE_ID = "mynewdevice"
 # Details of the direct method to call.
 #METHOD_NAME = "SetTelemetryInterval"
 METHOD_NAME = "send_file"
-METHOD_PAYLOAD = "1"
+METHOD_PAYLOAD = "2"
 TIMEOUT = 60
 
 def iothub_devicemethod_sample_run():
